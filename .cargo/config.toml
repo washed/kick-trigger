@@ -1,0 +1,7 @@
+[env]
+DEFMT_LOG = "info"
+
+[target.thumbv7em-none-eabihf]
+runner = "probe-rs run --chip STM32L476RGTx"
+rustflags = ["-C", "link-arg=-Tlink.x"]
+

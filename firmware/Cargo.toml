@@ -1,0 +1,21 @@
+[package]
+name = "kick-trigger"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+default = []
+logging = ["dep:defmt", "dep:defmt-rtt"]
+detector-diagnostics = ["logging", "hit-detector/diagnostics"]
+
+[dependencies]
+hit-detector = { path = "../detector" }
+embassy-executor = { version = "0.10.0", features = ["platform-cortex-m", "executor-thread"] }
+embassy-stm32 = { version = "=0.6.0", features = ["stm32l476rg", "time-driver-tim2", "memory-x", "unstable-pac", "exti"] }
+embassy-time = "0.5.1"
+cortex-m = { version = "0.7.9", features = ["critical-section-single-core"] }
+cortex-m-rt = "0.7.7"
+panic-halt = "1.0.0"
+defmt = { version = "1.2.0", optional = true }
+defmt-rtt = { version = "1.3.1", optional = true, features = ["disable-blocking-mode"] }
+

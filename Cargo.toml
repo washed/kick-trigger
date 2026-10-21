@@ -1,0 +1,9 @@
+[workspace]
+members = ["detector", "firmware"]
+default-members = ["detector"]
+resolver = "2"
+
+[profile.release]
+debug = 2
+lto = true
+opt-level = "s"
