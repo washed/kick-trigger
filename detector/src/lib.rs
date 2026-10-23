@@ -4,7 +4,7 @@ use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock}
 use ringbuf::{traits::*, StaticRb};
 use serde::Serialize;
 
-const RB_SIZE: usize = 5000;
+const RB_SIZE: usize = 200;
 
 /// All thresholds use absolute ADC counts relative to `baseline`.
 #[derive(Clone, Copy, Debug)]

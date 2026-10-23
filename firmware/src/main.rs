@@ -5,7 +5,6 @@
 use defmt_rtt as _;
 
 use core::fmt::Write;
-use rtt_target::{rtt_init, ChannelMode::NoBlockSkip, UpChannel};
 
 use embassy_stm32::{
     adc::{Adc, AdcChannel, SampleTime},
@@ -103,26 +102,15 @@ async fn main(spawner: embassy_executor::Spawner) {
         DMA_SAMPLES
     );
 
-    let channels = rtt_init! {
-        up: {
-            1: {
-                size: 1024,
-                mode: NoBlockSkip,
-                name: "recorder",
-            }
-        }
-    };
-    let output = channels.up.0;
-
     #[embassy_executor::task]
-    async fn ping(mut output: UpChannel) {
+    async fn ping() {
         loop {
-            writeln!(output, "Hello, world!").ok();
+            defmt::println!("Hello, world!");
             embassy_time::Timer::after_secs(1).await;
         }
     }
 
-    spawner.spawn(ping(output).unwrap());
+    spawner.spawn(ping().unwrap());
 
     // Finish initialization and startup logging before samples start arriving.
     adc.start();
@@ -150,8 +138,8 @@ async fn main(spawner: embassy_executor::Spawner) {
                             sample,
                             sample.abs_diff(DETECTION.baseline)
                         );
-                        // #[cfg(feature = "detector-diagnostics")]
-                        // spawner.spawn(diagnostics.log_recorder());
+                        #[cfg(feature = "detector-diagnostics")]
+                        diagnostics.log_recorder().await;
                     }
                     #[cfg(feature = "detector-diagnostics")]
                     diagnostics.update(sample, detector.snapshot()).await;

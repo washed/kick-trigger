@@ -50,7 +50,7 @@ impl Diagnostics {
     pub async fn log_recorder(&self) {
         let data = self.recorder.dump().await;
         let rec_data = RecorderData(&data);
-        let postcard_data: Vec<u8, 10000> = to_vec(&rec_data).unwrap();
-        defmt::info!("{}", postcard_data.as_slice());
+        let postcard_data: Vec<u8, 2000> = to_vec(&rec_data).unwrap();
+        defmt::println!("{=[u8]}", postcard_data.as_slice());
     }
 }
