@@ -3,6 +3,10 @@
 
 #[cfg(feature = "logging")]
 use defmt_rtt as _;
+
+use core::fmt::Write;
+use rtt_target::{rtt_init, ChannelMode::NoBlockSkip, UpChannel};
+
 use embassy_stm32::{
     adc::{Adc, AdcChannel, SampleTime},
     bind_interrupts, dma,
@@ -37,7 +41,7 @@ const DMA_SAMPLES: usize = 256;
 const DMA_SAMPLES: usize = 64;
 
 #[embassy_executor::main]
-async fn main(_spawner: embassy_executor::Spawner) {
+async fn main(spawner: embassy_executor::Spawner) {
     // MSI 4 MHz / 1 * 40 / 2 = 80 MHz, the STM32L476 maximum.
     // TIM6 still triggers at 50 kHz nominally: PSC=0, ARR=1599.
     let mut config = embassy_stm32::Config::default();
@@ -98,6 +102,28 @@ async fn main(_spawner: embassy_executor::Spawner) {
         "starting acquisition: CPU=80 MHz, DMA={} samples; pulse width 2 ms plus block scheduling",
         DMA_SAMPLES
     );
+
+    let channels = rtt_init! {
+        up: {
+            1: {
+                size: 1024,
+                mode: NoBlockSkip,
+                name: "recorder",
+            }
+        }
+    };
+    let output = channels.up.0;
+
+    #[embassy_executor::task]
+    async fn ping(mut output: UpChannel) {
+        loop {
+            writeln!(output, "Hello, world!").ok();
+            embassy_time::Timer::after_secs(1).await;
+        }
+    }
+
+    spawner.spawn(ping(output).unwrap());
+
     // Finish initialization and startup logging before samples start arriving.
     adc.start();
     timer.start();
@@ -124,9 +150,11 @@ async fn main(_spawner: embassy_executor::Spawner) {
                             sample,
                             sample.abs_diff(DETECTION.baseline)
                         );
+                        // #[cfg(feature = "detector-diagnostics")]
+                        // spawner.spawn(diagnostics.log_recorder());
                     }
                     #[cfg(feature = "detector-diagnostics")]
-                    diagnostics.update(sample, detector.snapshot());
+                    diagnostics.update(sample, detector.snapshot()).await;
                 }
                 if pulse_until.is_some_and(|deadline| Instant::now() >= deadline) {
                     pulse.set_low();

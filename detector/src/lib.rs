@@ -1,5 +1,11 @@
 #![no_std]
 
+use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, rwlock::RwLock};
+use ringbuf::{traits::*, StaticRb};
+use serde::Serialize;
+
+const RB_SIZE: usize = 5000;
+
 /// All thresholds use absolute ADC counts relative to `baseline`.
 #[derive(Clone, Copy, Debug)]
 pub struct Config {
@@ -31,6 +37,38 @@ pub struct Snapshot {
     pub armed: bool,
     pub holdoff_remaining: u32,
     pub quiet_samples: u32,
+}
+
+#[cfg(feature = "diagnostics")]
+#[derive(Serialize)]
+pub struct RecorderData<'a>(pub &'a [u16]);
+
+#[cfg(feature = "diagnostics")]
+pub struct Recorder {
+    buffer: RwLock<CriticalSectionRawMutex, StaticRb<u16, RB_SIZE>>,
+}
+
+#[cfg(feature = "diagnostics")]
+impl Recorder {
+    pub fn new() -> Self {
+        Recorder {
+            buffer: RwLock::new(StaticRb::default()),
+        }
+    }
+
+    pub async fn record(&mut self, sample: u16) {
+        let mut buffer = self.buffer.write().await;
+        buffer.push_overwrite(sample);
+    }
+
+    pub async fn dump(&self) -> [u16; RB_SIZE] {
+        let buffer = self.buffer.read().await;
+        let slices = buffer.as_slices();
+        let mut copy = [0u16; RB_SIZE];
+        let samples = slices.0.iter().chain(slices.1);
+        samples.enumerate().for_each(|(i, s)| copy[i] = *s);
+        copy
+    }
 }
 
 impl Detector {

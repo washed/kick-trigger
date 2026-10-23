@@ -1,0 +1,11 @@
+[package]
+name = "ui"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+default = []
+detector-diagnostics = []
+
+[dependencies]
+probe-rs = "0.32.0"

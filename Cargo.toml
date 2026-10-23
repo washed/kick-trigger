@@ -1,5 +1,5 @@
 [workspace]
-members = ["detector", "firmware"]
+members = ["detector", "firmware", "ui"]
 default-members = ["detector"]
 resolver = "2"
 
